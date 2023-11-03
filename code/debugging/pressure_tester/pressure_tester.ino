@@ -31,7 +31,7 @@ void setup() {
   pinMode(dataLED, OUTPUT);
   digitalWrite(dataLED, LOW);
 
-  if(! SD.begin(pinCS)) {
+  if(! SD.begin(pinCS)){
     Serial.println("cannot find SD");
     while(1);
   }
@@ -54,7 +54,7 @@ void loop() {
   // using the field test equation:
   float pressure_1 = voltage*2.5046 - 0.9938;
   Serial.print("Using field equation: "); Serial.print(pressure_1); Serial.println(" psi");
-  float feet_1 = voltage*5.7831 - 2.2947;
+  float feet_1 = voltage*5.7831 - 2.2404;
   Serial.print("\t"); Serial.print(feet_1); Serial.println(" ft of water");
 
   // using linear scaling

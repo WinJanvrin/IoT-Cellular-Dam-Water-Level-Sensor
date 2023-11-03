@@ -321,7 +321,7 @@ void setup() {
   // find the initial pressure reading that will correspond to sea level
   float voltage = analogRead(pressurePin);      // convert 10 bit analog reading to voltage
   voltage = voltage * 5 / 1024;
-  initial_feet_of_water = voltage * 5.7724 - 2.8862;      // 0.5-4.5V maps to 0-23.1 feet of water
+  initial_feet_of_water = voltage * 5.7831 - 2.2404;      // 0.5-4.5V maps to 0-23.1 feet of water
   Serial.print("initial feet of water: "); Serial.print(initial_feet_of_water); Serial.println(" ft");
   delay(50);
 }
@@ -390,7 +390,7 @@ void loop() {
   // take stage pressure data
   float voltage = analogRead(pressurePin);                                                     // convert 10 bit analog reading to voltage
   voltage = voltage * 5 / 1023;
-  float feet_of_water = voltage * 5.7724 - 2.8862;                                             // 0.5-4.5V maps to 0-23.1 feet of water
+  float feet_of_water = voltage * 5.7831 - 2.2404;                                             // 0.5-4.5V maps to 0-23.1 feet of water
   Serial.print("Feet above sensor: "); Serial.print(feet_of_water); Serial.println(" ft");
   feet_of_water = sea_level + (feet_of_water - initial_feet_of_water);
   Serial.print("\tabove sea level: "); Serial.print(feet_of_water); Serial.println(" ft");
