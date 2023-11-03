@@ -8,7 +8,6 @@
   Written by Limor Fried/Ladyada for Adafruit Industries.
   MIT license, all text above must be included in any redistribution
  ****************************************************/
-#include <SPI.h>
 #include "Adafruit_MQTT.h"
 #include "Adafruit_MQTT_Client.h"
 #include <WiFi101.h>
@@ -29,7 +28,7 @@
 //WINC pins
 #define WINC_CS   10
 #define WINC_IRQ  7
-#define WINC_RST  5
+#define WINC_RST  5     //need to change
 #define WINC_EN   2     // or, tie EN to VCC
 
 // indicator LEDs
@@ -149,7 +148,7 @@ void setup() {
   pinMode(whiteLed, OUTPUT);
   digitalWrite(whiteLed, LOW);
 
-  // configure the JSN-SR04 pins
+  // configure the JSN-SR04 pins (sonar sensor)
   pinMode(trigPin, OUTPUT);
   pinMode(echoPin, INPUT);
 
@@ -165,26 +164,26 @@ void setup() {
     while (1);
   }
 
-  // check if MPRLS began
+  // check if MPRLS began (pressure sensor)
   if (! mpr.begin()) {
     Serial.println(F("MPRLS not found"));
     while (1);
   }
   
-  // wake up the MCP9808
+  // wake up the MCP9808 (temp sensor) ( could be problematic)
   tempsensor.wake();                                  
   if (!tempsensor.begin(0x19)) {
     Serial.println("MCP9808 not found");
     while (1);
   }
 
-  // check if INA219 began
+  // check if INA219 began (current sensor)
   if( !ina219.begin()) {
     Serial.println("INA219 not found");
     while(1);
   }
 
-  // begin the ds18b20
+  // begin the ds18b20 (external temp sensor)
   ds18b20.begin();
 
   // begin the RTC
@@ -223,10 +222,10 @@ void setup() {
 
   Wifi_connect();
 
-while (! deployed)
-  Wifi_connect();
-  MQTT_connect();
-  // subscription packet subloop, this runs and waits for the toggle switch in Adafruit IO to turn on
+  while (! deployed){
+    Wifi_connect();
+    MQTT_connect();
+    // subscription packet subloop, this runs and waits for the toggle switch in Adafruit IO to turn on
     Adafruit_MQTT_Subscribe *subscription;
     while ((subscription = mqtt.readSubscription(5000))) {
       if (subscription == &feed_deploy) {
@@ -554,9 +553,7 @@ void pingSleep() {
 
   RTC.alarm(ALARM_1);
 
-  digitalWrite(WINC_EN, LOW);                       // Turn WINC off
-  delay(500);
-  digitalWrite(WINC_RST, LOW);
+  WiFi.maxLowPowerMode(); //WINC1500 sleep
   delay(500);
 
   sleep_enable();
@@ -572,10 +569,8 @@ void pingWake() {
   sleep_disable();
   detachInterrupt(interrupt);                   // clear the interrupt flag
 
-  digitalWrite(WINC_EN, HIGH);                 //Turn WINC Back on
+  WiFi.noLowPowerMode()
   delay(500);
-  digitalWrite(WINC_RST, HIGH);
-  delay(1000);
 
   mqtt.ping();
 }
@@ -584,15 +579,9 @@ void goSleep() {
   Serial.println("Going to sleep...");
   delay(100);
 
-  m2m_wifi_set_sleep_mode(M2M_PS_DEEP_AUTOMATIC, 1);
-
-  delay(500);
-
  
-  digitalWrite(WINC_EN, LOW);                 //Turn WINC Back off
+  WiFi.maxLowPowerMode();
   delay(500);
-  digitalWrite(WINC_RST, LOW);
-
   // activate sleep mode, attach interrupt and assign a waking function to run
   sleep_enable();
   attachInterrupt(interrupt, wakeUp, LOW);
@@ -608,9 +597,7 @@ void wakeUp() {
   detachInterrupt(interrupt);
 
  
-  digitalWrite(WINC_EN, LOW);                 //Turn WINC Back on
-  delay(500);
-  digitalWrite(WINC_RST, LOW);
+  WiFi.noLowPowerMode();
   delay(500);
 }
 
@@ -657,4 +644,23 @@ void MQTT_connect() {
   Serial.println("MQTT Connected!");
   digitalWrite(greenLED, HIGH);
 
+}
+
+void MQTT_publish_checkSuccess(Adafruit_MQTT_Publish &feed, const char *feedContent) {
+  Serial.println(F("Sending data..."));
+  uint8_t txfailures = 0;
+  if (! feed.publish(feedContent)) {
+    for (int i = 0; i < 5; i++) {
+      digitalWrite(redLed, HIGH);
+      delay(200);
+      digitalWrite(redLed, LOW);
+    }
+    Serial.println(F("Failed"));
+    txfailures++;
+  }
+  else {
+    digitalWrite(redLed, LOW);
+    Serial.println(F("OK!"));
+    txfailures = 0;
+  }
 }
